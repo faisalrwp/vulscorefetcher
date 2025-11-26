@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🛡️⚡ CVE Enrichment & Smart Vulnerability Analyzer  
+# 🛡️⚡ CVE CVE Vulnerabilities Score Fetcher Tool  
 ### **Automated CVSS + EPSS Lookup • SQLite Caching • GUI • API Integration**
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
@@ -14,10 +14,10 @@
 
 ## 🌟 **Overview**
 
-This project provides a complete **next-generation CVE lookup and enrichment system** with:
+This project provides a complete **next-generation CVE / EPSS Score lookup and enrichment system** with:
 
-### ✔ Automatic EPSS lookup  
-### ✔ Automatic CVSS lookup via NVD API  
+### ✔ Automatic EPSS Score lookup  
+### ✔ Automatic CVSS Score lookup via NVD API  
 ### ✔ Encrypted API key storage  
 ### ✔ Persistent SQLite caching  
 ### ✔ Detailed JSON storage for CVE insights  
@@ -94,10 +94,10 @@ Automatically:
 
 ```bash
 
-📁 cve-enrichment-tool/
+📁 CVE Vulnerabilities Score Fetcher Tool/
 │
-├── gui_app_advanced.py # The main GUI application
-├── process_csv.py # CSV processor engine
+├── cve_gui.py # The main GUI application
+├── cve_process.py # CSV processor engine + CLI Version
 ├── cve_lookup.py # API + caching engine
 ├── settings.json # Persistent GUI settings
 ├── nvd.key # (Created automatically)
@@ -106,13 +106,20 @@ Automatically:
 └── sample.csv # Example input CSV (optional)
 
 
+---
 
-2️⃣ Ensure all project files are in the same directory.
+---
+
 # 🛠️ **Installation**
 
 ### 1️⃣ Install Python dependencies  
 pip install requests python-dateutil tqdm ttkbootstrap
 
+
+
+
+
+2️⃣ Ensure all project files are in the same directory.
 3️⃣ Run GUI:
 
 ```bash
@@ -128,5 +135,4 @@ Database Tools → Update DB, Force update DB
 Settings → Save theme, log size, window size
 
 Logs → Full real-time log output
-
 
