@@ -92,27 +92,7 @@ Automatically:
 
 # 📂 **Project Structure**
 
-📁 cve-enrichment-tool/
-│
-├── gui_app_advanced.py # The main GUI application
-├── process_csv.py # CSV processor engine
-├── cve_lookup.py # API + caching engine
-├── settings.json # Persistent GUI settings
-├── nvd.key # (Created automatically)
-│
-├── README.md # THIS FILE ❤️
-└── sample.csv # Example input CSV (optional)
-
-
----
-
----
-
-# 🛠️ **Installation**
-
-### 1️⃣ Install Python dependencies  
 ```bash
-pip install requests python-dateutil tqdm ttkbootstrap
 
 📁 cve-enrichment-tool/
 │
@@ -128,6 +108,11 @@ pip install requests python-dateutil tqdm ttkbootstrap
 
 
 2️⃣ Ensure all project files are in the same directory.
+# 🛠️ **Installation**
+
+### 1️⃣ Install Python dependencies  
+pip install requests python-dateutil tqdm ttkbootstrap
+
 3️⃣ Run GUI:
 
 ```bash
@@ -143,4 +128,5 @@ Database Tools → Update DB, Force update DB
 Settings → Save theme, log size, window size
 
 Logs → Full real-time log output
+
 
