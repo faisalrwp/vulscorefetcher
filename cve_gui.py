@@ -215,6 +215,8 @@ class CVEProcessorGUI(ttk.Window):
 
     def run_processing(self):
         csv_path = self.csv_path_var.get().strip()
+        csv_path = os.path.normpath(csv_path)
+        messagebox.showinfo("File Path",csv_path)
         if not csv_path:
             messagebox.showerror("Error", "Please select a CSV file.")
             return

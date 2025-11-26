@@ -331,7 +331,7 @@ def update_db(force=False, log_callback=None):
     for cve_id, last_updated in rows:
         if force or not is_cache_valid(last_updated):
             log(f"[DB] Updating {cve_id}", log_callback)
-            lookup_cve(cve_id, full=False, log_callback=log_callback)
+            lookup_cve(cve_id, full=True, log_callback=log_callback)
         else:
             log(f"[DB] Skipping fresh {cve_id}", log_callback)
 
@@ -344,5 +344,11 @@ def update_db(force=False, log_callback=None):
 # ---------------------------------------------------------
 if __name__ == "__main__":
     print("Standalone test mode.")
-    c = input("Enter CVE ID: ").strip()
-    print(lookup_cve(c, full=True))
+    c = input("Enter CVE ID: ").strip().upper()
+    update_db(force=True)
+    if (c == "UPDATE"):
+        update_db(force=False)
+    elif (c == "FUPATE"):
+        update_db(force=True)
+    else:
+        print(lookup_cve(c, full=True))

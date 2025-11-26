@@ -58,13 +58,22 @@ def process_and_update_csv(
     # ---------------------------------------------
     # Step 1: Locate file case-insensitively
     # ---------------------------------------------
-    actual_file = find_file_case_insensitive(csv_file_path)
-    if not actual_file:
-        raise FileNotFoundError(
-            f"File '{csv_file_path}' could not be found (case-insensitive search)."
-        )
+    # --- NEW LOGIC ---
+    # If full path exists, use it directly
+    if os.path.isfile(csv_file_path):
+        actual_file = csv_file_path
+    else:
+        # Fallback to old behavior (lookup in current directory)
+        actual_file = find_file_case_insensitive(os.path.basename(csv_file_path))
 
-    log(f"[PROCESS] Located file: {actual_file}")
+        if actual_file:
+            actual_file = os.path.join(os.getcwd(), actual_file)
+        else:
+            raise FileNotFoundError(
+                f"❌ ERROR: File '{csv_file_path}' not found "
+                f"(checked full path and working directory)."
+            )
+
 
     # ---------------------------------------------
     # Step 2: Load CSV rows into memory buffer
