@@ -131,16 +131,16 @@ def is_cache_valid(date_str):
     #     return False
     try:
         dt = datetime.fromisoformat(date_str)
-        # return datetime.utcnow() - dt > timedelta(days=EXPIRY_DAYS)
-        return datetime.now(datetime.UTC) - dt > timedelta(days=EXPIRY_DAYS)
-    except:
-        return True
+        # Return True when cache is still valid (i.e. age < expiry)
+        return (datetime.now() - dt) < timedelta(days=CACHE_EXPIRY_DAYS)
+    except Exception:
+        return False
 
 
 # ---------------------------------------------------------
 # API CALLERS
 # ---------------------------------------------------------
-def fetch_epss(cvcve_ide):
+def fetch_epss(cve_id):
     """Call EPSS API."""
     try:
         r = requests.get(EPSS_URL, params={"cve": cve_id}, timeout=10)
@@ -150,8 +150,11 @@ def fetch_epss(cvcve_ide):
             return None, None
 
         entry = data["data"][0]
-        return float(entry.get("epss", 0.0)), data
-    except:
+        try:
+            return float(entry.get("epss", 0.0)), data
+        except Exception:
+            return None, data
+    except Exception:
         return None, None
 
 

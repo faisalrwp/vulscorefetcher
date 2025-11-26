@@ -9,6 +9,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+import sqlite3
+from datetime import datetime
 
 from cve_process import process_and_update_csv
 from cve_lookup import update_db, check_nvd_api_key, prompt_and_store_nvd_key
@@ -25,7 +27,8 @@ def load_settings():
         return {
             "last_csv": "",
             "update_db": False,
-            "force_update": False
+            "force_update": False,
+            "dark_mode": True
         }
 
     try:
@@ -35,7 +38,8 @@ def load_settings():
         return {
             "last_csv": "",
             "update_db": False,
-            "force_update": False
+            "force_update": False,
+            "dark_mode": True
         }
 
 
@@ -54,13 +58,18 @@ def save_settings(settings):
 class CVEProcessorGUI(ttk.Window):
 
     def __init__(self):
-        super().__init__(themename="darkly")
+        # Load settings early so theme can be selected before creating the window
+        self.settings = load_settings()
+        theme = "darkly" if self.settings.get("dark_mode", True) else "flatly"
+        super().__init__(themename=theme)
         self.title("Next-Generation CVE Processing Suite")
         self.geometry("900x650")
         self.resizable(False, False)
 
         self.cancel_flag = False
-        self.settings = load_settings()
+
+        # Keep a Tk variable for dark mode to bind to the settings UI
+        self.dark_mode_var = tk.BooleanVar(value=self.settings.get("dark_mode", True))
 
         # ------------------ NOTEBOOK (TABS) -----------------------
         notebook = ttk.Notebook(self)
@@ -84,6 +93,35 @@ class CVEProcessorGUI(ttk.Window):
 
         # Ensure NVD key exists
         self.ensure_nvd_key()
+
+    def apply_theme(self, dark_mode: bool):
+        try:
+            style = ttk.Style()
+            theme = "darkly" if dark_mode else "flatly"
+            style.theme_use(theme)
+        except Exception:
+            pass
+
+        # Adjust some widget colors that are not always theme-controlled
+        try:
+            if dark_mode:
+                if hasattr(self, 'db_stats_box'):
+                    self.db_stats_box.config(bg="#1E1E1E", fg="#00E0FF")
+                if hasattr(self, 'log_text'):
+                    self.log_text.config(bg="#1E1E1E", fg="#00FFAA", insertbackground="white")
+            else:
+                if hasattr(self, 'db_stats_box'):
+                    self.db_stats_box.config(bg="white", fg="black")
+                if hasattr(self, 'log_text'):
+                    self.log_text.config(bg="white", fg="black", insertbackground="black")
+        except Exception:
+            pass
+
+    def on_dark_mode_toggle(self):
+        val = bool(self.dark_mode_var.get())
+        self.settings["dark_mode"] = val
+        save_settings(self.settings)
+        self.apply_theme(val)
 
 
 
@@ -143,17 +181,77 @@ class CVEProcessorGUI(ttk.Window):
     def build_db_tab(self):
         frame = self.tab_db
 
-        ttk.Label(frame, text="Database Maintenance Tools", font=("Segoe UI", 16, "bold")).pack(pady=10)
+        ttk.Label(frame, text="Database Maintenance Tools",
+                font=("Segoe UI", 16, "bold")).pack(pady=10)
 
-        ttk.Button(frame, text="Update Database", bootstyle=PRIMARY,
-                   command=lambda: self.run_db_update(force=False)).pack(pady=10)
+        # ------- Buttons -------
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(pady=10)
 
-        ttk.Button(frame, text="Force Update Database", bootstyle=DANGER,
-                   command=lambda: self.run_db_update(force=True)).pack(pady=10)
+        ttk.Button(btn_frame, text="Update Database", width=20, bootstyle=PRIMARY,
+                command=lambda: self.run_db_update(force=False)).grid(row=0, column=0, padx=10)
 
-        ttk.Button(frame, text="Optimize (VACUUM)", bootstyle=SUCCESS,
-                   command=self.optimize_db).pack(pady=10)
+        ttk.Button(btn_frame, text="Force Update Database", width=20, bootstyle=DANGER,
+                command=lambda: self.run_db_update(force=True)).grid(row=0, column=1, padx=10)
 
+        ttk.Button(btn_frame, text="Optimize (VACUUM)", width=20, bootstyle=SUCCESS,
+                command=self.optimize_db).grid(row=0, column=2, padx=10)
+
+        ttk.Separator(frame).pack(fill="x", pady=15)
+
+        # -------- Database Statistics Panel --------
+        ttk.Label(frame, text="Database Statistics",
+                font=("Segoe UI", 14, "bold")).pack(pady=5)
+
+        self.db_stats_box = tk.Text(
+            frame,
+            width=100, height=18,
+            bg="#1E1E1E", fg="#00E0FF",
+            font=("Consolas", 10),
+            state="disabled"
+        )
+        self.db_stats_box.pack(padx=15, pady=10)
+
+        ttk.Button(frame, text="Refresh Statistics", bootstyle=INFO,
+                command=self.refresh_db_stats).pack(pady=5)
+
+        # Load stats on start
+        self.refresh_db_stats()
+
+    def refresh_db_stats(self):
+        stats = self.get_db_stats()
+
+        self.db_stats_box.config(state="normal")
+        self.db_stats_box.delete("1.0", "end")
+
+        if not stats["exists"]:
+            self.db_stats_box.insert("end", "⚠ Database file not found.\n")
+            self.db_stats_box.config(state="disabled")
+            return
+
+        output = f"""
+        📦 DATABASE STATISTICS — cve_cache.db
+        ──────────────────────────────────────────────
+
+        📁 File Size:           {stats['size_mb']} MB
+        📚 Total CVE Entries:   {stats['total_records']}
+
+        🥇 EPSS Cache:          {stats['epss_cache']}
+        🥈 CVSS Cache:          {stats['cvss_cache']}
+
+        📝 EPSS Detail Rows:    {stats['epss_detail']}
+        📄 CVE Detail Rows:     {stats['cve_detail']}
+
+        ⏱ Latest Cache Update: {stats['latest_update']}
+        ⏳ Average Age:         {stats['avg_age_days']} days
+        🔹 Newest Record Age:   {stats['newest_age']} days
+        🔸 Oldest Record Age:   {stats['oldest_age']} days
+        """
+
+        self.db_stats_box.insert("end", output.strip())
+        self.db_stats_box.config(state="disabled")
+
+        self.log("[DB] Statistics refreshed.")
 
 
     # ---------------------------------------------------------
@@ -172,6 +270,24 @@ class CVEProcessorGUI(ttk.Window):
 
         ttk.Button(frame, text="Open Settings File",
                    command=lambda: os.startfile(SETTINGS_FILE), bootstyle=SECONDARY).pack(pady=8)
+
+        # Dark mode toggle
+        try:
+            ttk.Checkbutton(
+                frame,
+                text="Dark Mode",
+                variable=self.dark_mode_var,
+                command=self.on_dark_mode_toggle,
+                bootstyle="info-round-toggle"
+            ).pack(pady=6)
+        except Exception:
+            # Fallback if bootstyle not supported
+            ttk.Checkbutton(
+                frame,
+                text="Dark Mode",
+                variable=self.dark_mode_var,
+                command=self.on_dark_mode_toggle
+            ).pack(pady=6)
 
 
 
@@ -203,8 +319,21 @@ class CVEProcessorGUI(ttk.Window):
             self.log(f"[GUI] Selected CSV: {filename}")
 
     def log(self, msg):
-        self.log_text.insert("end", msg + "\n")
-        self.log_text.see("end")
+        timestamp = datetime.now().isoformat(sep=' ', timespec='seconds')
+        line = f"[{timestamp}] {msg}\n"
+        try:
+            if hasattr(self, 'log_text') and self.log_text:
+                self.log_text.configure(state='normal')
+                self.log_text.insert('end', line)
+                self.log_text.see('end')
+                self.log_text.configure(state='disabled')
+            else:
+                print(line, end='')
+        except Exception:
+            try:
+                print(line, end='')
+            except:
+                pass
 
     def cancel_processing(self):
         self.cancel_flag = True
@@ -216,7 +345,7 @@ class CVEProcessorGUI(ttk.Window):
     def run_processing(self):
         csv_path = self.csv_path_var.get().strip()
         csv_path = os.path.normpath(csv_path)
-        messagebox.showinfo("File Path",csv_path)
+        # messagebox.showinfo("File Path",csv_path)
         if not csv_path:
             messagebox.showerror("Error", "Please select a CSV file.")
             return
@@ -311,6 +440,86 @@ class CVEProcessorGUI(ttk.Window):
             save_settings(self.settings)
             self.reload_settings()
             self.log("[SETTINGS] Settings reset to default.")
+
+    # ---------------------------------------------------------
+    # DATABASE STATISTICS HELPER
+    # ---------------------------------------------------------
+    def get_db_stats(self):
+        db_file = "cve_cache.db"
+        stats = {
+            "exists": os.path.exists(db_file),
+            "size_mb": 0,
+            "epss_cache": 0,
+            "cvss_cache": 0,
+            "epss_detail": 0,
+            "cve_detail": 0,
+            "total_records": 0,
+            "latest_update": "N/A",
+            "avg_age_days": 0,
+            "newest_age": 0,
+            "oldest_age": 0
+        }
+
+        if not stats["exists"]:
+            return stats
+
+        stats["size_mb"] = round(os.path.getsize(db_file) / (1024 * 1024), 3)
+
+        conn = sqlite3.connect(db_file)
+        cur = conn.cursor()
+
+        def count(table):
+            try:
+                cur.execute(f"SELECT COUNT(*) FROM {table}")
+                row = cur.fetchone()
+                return row[0] if row and row[0] is not None else 0
+            except Exception:
+                return 0
+
+        def get_dates(table):
+            try:
+                cur.execute(f"SELECT last_updated FROM {table}")
+                rows = cur.fetchall()
+                if not rows:
+                    return []
+                valid = []
+                for r in rows:
+                    try:
+                        if r and r[0]:
+                            valid.append(datetime.fromisoformat(r[0]))
+                    except Exception:
+                        pass
+                return valid
+            except Exception:
+                return []
+
+        # Count tables
+        stats["epss_cache"] = count("epss_cache")
+        stats["cvss_cache"] = count("cvss_cache")
+        stats["epss_detail"] = count("epss_detail")
+        stats["cve_detail"] = count("cve_detail")
+        stats["total_records"] = stats["epss_cache"] + stats["cvss_cache"]
+
+        # Timestamp analysis
+        timestamps = []
+        for table in ["epss_cache", "cvss_cache"]:
+            timestamps.extend(get_dates(table))
+
+        if timestamps:
+            newest = max(timestamps)
+            oldest = min(timestamps)
+            now = datetime.now()
+
+            stats["latest_update"] = newest.isoformat()
+            stats["newest_age"] = (now - newest).days
+            stats["oldest_age"] = (now - oldest).days
+            stats["avg_age_days"] = round(
+                sum((now - t).days for t in timestamps) / len(timestamps), 2
+            )
+
+        conn.close()
+        return stats
+
 
     # ---------------------------------------------------------
     # NVD Key Handling
