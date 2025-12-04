@@ -1,0 +1,12 @@
+{
+    "dark_mode": false,
+    "last_csv_path": "",
+    "auto_update_db": false,
+    "force_update_db": false,
+    "window_width": 1200,
+    "window_height": 800,
+    "log_font_size": 11,
+    "last_csv": "sample.csv",
+    "update_db": false,
+    "force_update": false
+}

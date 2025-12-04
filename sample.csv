@@ -1,0 +1,4 @@
+﻿CS,CS1 Component,CVEID,CVSS Score,Severity,EPSS Score,EPSS Risk,Impact Summary
+CS01,Vital Signs Monitor,CVE-2018-16986,9.8,High,0.63,High,BLE RCE on chip-level radio module.
+CS02,1. Linux-Based Secure Gateway (OS Kernel & Services),CVE-2019-14615,8.2,High,0.41,High,Kernel flaw enabling privilege escalation on Intel CPUs.
+CS03,"2. EHR Web Frontend (Angular, PHP, ASP.NET, React)",CVE-2020-8209,7.5,High,0.48,High,Client-side template injection in JS frameworks.

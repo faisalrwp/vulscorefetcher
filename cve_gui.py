@@ -172,7 +172,14 @@ class CVEProcessorGUI(ttk.Window):
         ttk.Button(button_frame, text="Cancel",
                    command=self.cancel_processing,
                    bootstyle=DANGER).grid(row=0, column=1, padx=10)
-
+        
+        ttk.Label(frame, text="Note: Ensure the CSV file is not open in another application during processing.",
+                  font=("Segoe UI", 9, "italic")).pack(pady=2)
+        ttk.Label(frame, text="Recommended: Backup your CSV file before processing.",
+                    font=("Segoe UI", 9, "italic")).pack(pady=2)
+        ttk.Label(frame, text="File must contain CVEID column for processing.",
+                  font=("Segoe UI", 9, "bold italic")).pack(pady=2)
+        ttk.Separator(frame).pack(fill="x", pady=10)
 
 
     # ---------------------------------------------------------
